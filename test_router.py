@@ -1,14 +1,23 @@
 """
 Test script for the Semantic Router
+
+Usage:
+  # Test with Docker (default port 8001)
+  python test_router.py
+  
+  # Test with local Python server (port 8000)
+  ROUTER_URL=http://localhost:8000 python test_router.py
 """
 
 import requests
 import base64
 import json
+import os
 from pathlib import Path
+from typing import Optional
 
 
-def test_analyze_endpoint(router_url: str, image_path: str = None, audio_desc: str = None):
+def test_analyze_endpoint(router_url: str, image_path: Optional[str] = None, audio_desc: Optional[str] = None):
     """Test the /analyze endpoint"""
     print("\n=== Testing /analyze endpoint ===")
     
@@ -39,7 +48,7 @@ def test_analyze_endpoint(router_url: str, image_path: str = None, audio_desc: s
         return None
 
 
-def test_route_endpoint(router_url: str, image_path: str = None, audio_desc: str = None):
+def test_route_endpoint(router_url: str, image_path: Optional[str] = None, audio_desc: Optional[str] = None):
     """Test the /route endpoint"""
     print("\n=== Testing /route endpoint ===")
     
@@ -89,7 +98,7 @@ def test_health_check(router_url: str):
 
 def main():
     """Run all tests"""
-    router_url = "http://localhost:8000"
+    router_url = os.environ.get("ROUTER_URL", "http://localhost:8001")
     
     print("PerceptEye Semantic Router - Test Suite")
     print("=" * 50)

@@ -1,9 +1,17 @@
 """
 Simple test to demonstrate semantic router detecting sign language from base64 image
+
+Usage:
+  # Test with Docker (default port 8001)
+  python test_simple.py
+  
+  # Test with local Python server (port 8000)
+  ROUTER_URL=http://localhost:8000 python test_simple.py
 """
 
 import requests
 import base64
+import os
 from pathlib import Path
 
 
@@ -12,7 +20,8 @@ def test_sign_language_detection():
     
     # Configuration
     IMAGE_PATH = "test/B_test.jpg"
-    ROUTER_URL = "http://localhost:8001"
+    # Router URL - defaults to 8001 for Docker deployment, use 8000 for local Python
+    ROUTER_URL = os.environ.get("ROUTER_URL", "http://localhost:8001")
     
     print("\n" + "=" * 70)
     print("🤖 SEMANTIC ROUTER - Sign Language Detection Test")

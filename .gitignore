@@ -48,7 +48,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
-/test
+
 # Translations
 *.mo
 *.pot
@@ -179,4 +179,11 @@ docker-compose.override.yml
 test_images/
 test_videos/
 test_audio/
+test_data/
+test/**/data/
+test/**/*.jpg
+test/**/*.png
+test/**/*.mp4
+test/**/*.wav
+test/**/*.mp3
 uploads/
