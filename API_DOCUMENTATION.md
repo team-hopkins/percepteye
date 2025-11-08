@@ -2,15 +2,17 @@
 
 ## Overview
 
-The Semantic Router is a middleware API that intelligently routes requests to appropriate feature APIs based on video and audio frame analysis using Gemini via OpenRouter.
+The Semantic Router is a middleware API that intelligently routes requests to appropriate feature APIs based on video and audio frame analysis using Google Gemini API directly.
 
 ## Base URL
+
 ```
 http://localhost:8000
 ```
 
 ## Authentication
-No authentication required for the router itself. Configure your Digital Ocean API credentials in the `.env` file.
+
+No authentication required for the router itself. The router uses your Gemini API key configured in the `.env` file to communicate with Google's API.
 
 ---
 
@@ -23,6 +25,7 @@ Check if the router is running.
 **Endpoint:** `GET /health`
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -39,6 +42,7 @@ Analyze a frame and get the routing decision without calling the target API.
 **Endpoint:** `POST /analyze`
 
 **Request Body:**
+
 ```json
 {
   "image_base64": "string (optional)",
@@ -48,6 +52,7 @@ Analyze a frame and get the routing decision without calling the target API.
 ```
 
 **Example Request:**
+
 ```bash
 curl -X POST http://localhost:8000/analyze \
   -H "Content-Type: application/json" \
@@ -58,6 +63,7 @@ curl -X POST http://localhost:8000/analyze \
 ```
 
 **Response:**
+
 ```json
 {
   "route": "speech",
@@ -68,6 +74,7 @@ curl -X POST http://localhost:8000/analyze \
 ```
 
 **Possible Routes:**
+
 - `speech` - Route to Speech API (Eleven Labs)
 - `people_recognition` - Route to People Recognition API
 - `sign_language` - Route to Sign Language API
@@ -82,6 +89,7 @@ Analyze frame, determine route, and call the appropriate Digital Ocean API.
 **Endpoint:** `POST /route`
 
 **Request Body:**
+
 ```json
 {
   "image_base64": "string (optional)",
@@ -91,6 +99,7 @@ Analyze frame, determine route, and call the appropriate Digital Ocean API.
 ```
 
 **Example Request:**
+
 ```bash
 curl -X POST http://localhost:8000/route \
   -H "Content-Type: application/json" \
@@ -101,6 +110,7 @@ curl -X POST http://localhost:8000/route \
 ```
 
 **Response:**
+
 ```json
 {
   "routing_decision": {
@@ -118,6 +128,7 @@ curl -X POST http://localhost:8000/route \
 ```
 
 **Status Values:**
+
 - `success` - Route determined and API called successfully
 - `skipped` - Low confidence or error, API not called
 - `error` - Error occurred during processing
@@ -133,11 +144,13 @@ Upload image and/or audio files directly instead of base64 encoding.
 **Content-Type:** `multipart/form-data`
 
 **Form Fields:**
+
 - `image` (file, optional) - Image file from camera
 - `audio` (file, optional) - Audio file
 - `audio_description` (string, optional) - Text description
 
 **Example Request:**
+
 ```bash
 curl -X POST http://localhost:8000/route/upload \
   -F "image=@frame.jpg" \
@@ -153,9 +166,11 @@ curl -X POST http://localhost:8000/route/upload \
 For testing - bypass semantic routing and call specific APIs directly.
 
 #### Force Speech API
+
 **Endpoint:** `POST /route/speech`
 
 **Request Body:**
+
 ```json
 {
   "audio_description": "Text to process"
@@ -163,9 +178,11 @@ For testing - bypass semantic routing and call specific APIs directly.
 ```
 
 #### Force People Recognition API
+
 **Endpoint:** `POST /route/people`
 
 **Request Body:**
+
 ```json
 {
   "image_base64": "base64_encoded_image"
@@ -173,9 +190,11 @@ For testing - bypass semantic routing and call specific APIs directly.
 ```
 
 #### Force Sign Language API
+
 **Endpoint:** `POST /route/sign-language`
 
 **Request Body:**
+
 ```json
 {
   "image_base64": "base64_encoded_image"
@@ -187,6 +206,7 @@ For testing - bypass semantic routing and call specific APIs directly.
 ## Integration Examples
 
 ### Python Example
+
 ```python
 import requests
 import base64
@@ -195,20 +215,20 @@ def send_frame_to_router(image_path, audio_desc=None):
     # Encode image
     with open(image_path, 'rb') as f:
         img_base64 = base64.b64encode(f.read()).decode('utf-8')
-    
+
     # Prepare request
     payload = {
         "image_base64": img_base64
     }
     if audio_desc:
         payload["audio_description"] = audio_desc
-    
+
     # Send to router
     response = requests.post(
         "http://localhost:8000/route",
         json=payload
     )
-    
+
     return response.json()
 
 # Use it
@@ -218,41 +238,39 @@ print(f"Confidence: {result['routing_decision']['confidence']}")
 ```
 
 ### JavaScript/Node.js Example
+
 ```javascript
-const fs = require('fs');
-const axios = require('axios');
+const fs = require("fs");
+const axios = require("axios");
 
 async function sendFrameToRouter(imagePath, audioDesc = null) {
   // Read and encode image
   const imageBuffer = fs.readFileSync(imagePath);
-  const imageBase64 = imageBuffer.toString('base64');
-  
+  const imageBase64 = imageBuffer.toString("base64");
+
   // Prepare request
   const payload = {
-    image_base64: imageBase64
+    image_base64: imageBase64,
   };
   if (audioDesc) {
     payload.audio_description = audioDesc;
   }
-  
+
   // Send to router
-  const response = await axios.post(
-    'http://localhost:8000/route',
-    payload
-  );
-  
+  const response = await axios.post("http://localhost:8000/route", payload);
+
   return response.data;
 }
 
 // Use it
-sendFrameToRouter('camera_frame.jpg', 'Someone speaking')
-  .then(result => {
-    console.log('Route:', result.routing_decision.route);
-    console.log('Confidence:', result.routing_decision.confidence);
-  });
+sendFrameToRouter("camera_frame.jpg", "Someone speaking").then((result) => {
+  console.log("Route:", result.routing_decision.route);
+  console.log("Confidence:", result.routing_decision.confidence);
+});
 ```
 
 ### cURL Example
+
 ```bash
 # Analyze only
 curl -X POST http://localhost:8000/analyze \
@@ -280,6 +298,7 @@ curl -X POST http://localhost:8000/route/upload \
 ## Error Handling
 
 ### Low Confidence Response
+
 ```json
 {
   "routing_decision": {
@@ -294,6 +313,7 @@ curl -X POST http://localhost:8000/route/upload \
 ```
 
 ### Error Response
+
 ```json
 {
   "routing_decision": {
@@ -317,11 +337,11 @@ curl -X POST http://localhost:8000/route/upload \
 Required in `.env` file:
 
 ```env
-# OpenRouter Configuration
-OPENROUTER_API_KEY=sk-or-v1-xxx
+# Google Gemini API Configuration
+GEMINI_API_KEY=AIzaSy...your_key_here
 
 # Model Selection
-GEMINI_MODEL=google/gemini-2.0-flash-exp:free
+GEMINI_MODEL=gemini-2.0-flash-exp
 
 # Target APIs (Your Digital Ocean endpoints)
 SPEECH_API_URL=https://speech.yourdomain.com/api/process
@@ -341,8 +361,8 @@ Higher threshold (0.9) = More conservative, only high-confidence routes
 
 ## Performance Considerations
 
-- **Latency**: Gemini analysis typically takes 1-3 seconds
-- **Rate Limits**: Free tier OpenRouter has rate limits
+- **Latency**: Gemini analysis typically takes 0.5-2 seconds
+- **Rate Limits**: Free tier has 15 RPM, 1M TPM, 1500 RPD
 - **Image Size**: Recommend max 1MB images for faster processing
 - **Concurrent Requests**: Server handles multiple requests asynchronously
 
@@ -351,25 +371,29 @@ Higher threshold (0.9) = More conservative, only high-confidence routes
 ## Troubleshooting
 
 ### Router returns `route: "none"` frequently
+
 - Check image quality and lighting
 - Provide more context in `audio_description`
 - Lower `CONFIDENCE_THRESHOLD` in `.env`
 
 ### Target API errors
+
 - Verify Digital Ocean API URLs are correct
 - Check API credentials and authentication
 - Test APIs independently with curl
 
 ### OpenRouter errors
-- Verify `OPENROUTER_API_KEY` is valid
-- Check rate limits on free tier
-- Try different Gemini model
+
+- Verify `GEMINI_API_KEY` is valid (get from Google AI Studio)
+- Check rate limits on free tier (15 RPM, 1500 RPD)
+- Ensure API key has proper permissions
 
 ---
 
 ## Support
 
 For issues:
+
 1. Check logs: `python api_server.py` (console output)
 2. Test with `python test_router.py`
 3. Verify `.env` configuration

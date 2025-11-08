@@ -16,7 +16,7 @@ An intelligent routing middleware that uses OpenRouter with Gemini to analyze vi
 ## Architecture
 
 ```
-Raspberry Pi (Camera) 
+Raspberry Pi (Camera)
     ↓
 Semantic Router (Middleware API)
     ↓ (analyzes with Gemini)
@@ -42,6 +42,7 @@ cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```env
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 SPEECH_API_URL=https://your-speech-api.digitalocean.com/api/process
@@ -68,11 +69,13 @@ The server will start on `http://localhost:8000`
 ### API Endpoints
 
 #### Health Check
+
 ```bash
 GET /health
 ```
 
 #### Analyze Frame (Decision Only)
+
 ```bash
 POST /analyze
 Content-Type: application/json
@@ -84,6 +87,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "route": "speech|people_recognition|sign_language|none",
@@ -94,6 +98,7 @@ Response:
 ```
 
 #### Route and Call API
+
 ```bash
 POST /route
 Content-Type: application/json
@@ -105,6 +110,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "routing_decision": {
@@ -120,6 +126,7 @@ Response:
 ```
 
 #### Upload Files
+
 ```bash
 POST /route/upload
 Content-Type: multipart/form-data
@@ -134,21 +141,25 @@ audio_description: "text" (optional)
 On your Raspberry Pi:
 
 1. Install dependencies:
+
 ```bash
 pip install opencv-python requests python-dotenv
 ```
 
 2. Set the router URL:
+
 ```bash
 export ROUTER_URL=http://your-server:8000
 ```
 
 3. Run the client:
+
 ```bash
 python raspberry_pi_client.py
 ```
 
 The client will:
+
 - Capture frames from the camera every 2 seconds
 - Send frames to the semantic router
 - Log routing decisions and API responses
@@ -162,6 +173,7 @@ python test_router.py
 ```
 
 This will test:
+
 - Health check endpoint
 - Frame analysis with different scenarios
 - Routing decisions
@@ -200,6 +212,7 @@ GEMINI_MODEL=google/gemini-2.0-flash-exp:free
 ```
 
 Available models on OpenRouter:
+
 - `google/gemini-2.0-flash-exp:free` (Fast, free)
 - `google/gemini-pro-vision` (More accurate, paid)
 - `google/gemini-flash-1.5` (Balanced)
@@ -234,6 +247,7 @@ WantedBy=multi-user.target
 ```
 
 Enable and start:
+
 ```bash
 sudo systemctl enable percepteye-client
 sudo systemctl start percepteye-client
@@ -266,6 +280,7 @@ CMD ["python", "api_server.py"]
 ```
 
 Build and run:
+
 ```bash
 docker build -t percepteye-router .
 docker run -p 8000:8000 --env-file .env percepteye-router
@@ -276,6 +291,7 @@ docker run -p 8000:8000 --env-file .env percepteye-router
 ### Low Confidence Scores
 
 If routing decisions have low confidence:
+
 - Ensure good lighting for camera
 - Provide clear audio descriptions
 - Adjust confidence threshold
@@ -284,6 +300,7 @@ If routing decisions have low confidence:
 ### API Errors
 
 If target APIs fail:
+
 - Check API URLs in `.env`
 - Verify API endpoints are running
 - Check network connectivity

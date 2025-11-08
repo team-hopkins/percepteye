@@ -1,6 +1,7 @@
 """
 FastAPI Server for Semantic Router
 Middleware API that receives data from Raspberry Pi and routes to appropriate services
+Uses Google Gemini API for intelligent routing
 """
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title="PerceptEye Semantic Router",
-    description="Intelligent routing middleware for assistive technology features",
+    description="Intelligent routing middleware using Google Gemini API",
     version="1.0.0"
 )
 
@@ -205,6 +206,6 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8000,
+        port=8001,
         log_level="info"
     )

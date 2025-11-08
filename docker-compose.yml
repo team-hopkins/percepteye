@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   semantic-router:
@@ -7,17 +7,17 @@ services:
       dockerfile: Dockerfile
     container_name: percepteye-semantic-router
     ports:
-      - "8000:8000"
+      - "8001:8001"
     environment:
-      # OpenRouter Configuration
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL:-google/gemini-2.0-flash-exp:free}
-      
+      # Google Gemini API Configuration
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
+
       # API Endpoints (deployed on Digital Ocean)
       - SPEECH_API_URL=${SPEECH_API_URL}
       - PEOPLE_RECOGNITION_API_URL=${PEOPLE_RECOGNITION_API_URL}
       - SIGN_LANGUAGE_API_URL=${SIGN_LANGUAGE_API_URL}
-      
+
       # Router Configuration
       - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD:-0.7}
     env_file:

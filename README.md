@@ -5,10 +5,10 @@ An intelligent routing middleware API that uses OpenRouter with Gemini to analyz
 ## System Architecture
 
 ```
-Raspberry Pi (Camera) 
+Raspberry Pi (Camera)
     ↓ (sends frames)
 Semantic Router API (Middleware)
-    ↓ (analyzes with Gemini via OpenRouter)
+    ↓ (analyzes with Google Gemini API)
     ├→ Speech API (Eleven Labs - Digital Ocean)
     ├→ People Recognition API (Digital Ocean)
     └→ Sign Language API (Digital Ocean)
@@ -17,13 +17,15 @@ Semantic Router API (Middleware)
 ## Features
 
 ### Three Feature APIs (deployed on Digital Ocean):
+
 1. **Speech API** - Text-to-Speech and Speech-to-Text using Eleven Labs
 2. **People Recognition API** - Face detection and person identification
 3. **Sign Language Detection API** - Gesture recognition from image frames
 
 ### Semantic Router:
+
 - Receives audio and video frames from Raspberry Pi
-- Uses Gemini (via OpenRouter) to analyze content
+- Uses Google Gemini API to analyze content
 - Intelligently routes to the appropriate feature API
 - Acts as middleware between Raspberry Pi and feature APIs
 
@@ -62,11 +64,13 @@ Server runs on: `http://localhost:8000`
 ## API Endpoints
 
 ### Health Check
+
 ```
 GET /health
 ```
 
 ### Analyze Frame (Get Routing Decision)
+
 ```
 POST /analyze
 Content-Type: application/json
@@ -79,6 +83,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "route": "speech|people_recognition|sign_language|none",
@@ -89,6 +94,7 @@ Content-Type: application/json
 ```
 
 ### Route and Execute (Analyze + Call Target API)
+
 ```
 POST /route
 Content-Type: application/json
@@ -100,6 +106,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "routing_decision": {
@@ -115,6 +122,7 @@ Content-Type: application/json
 ```
 
 ### Upload Files
+
 ```
 POST /route/upload
 Content-Type: multipart/form-data
@@ -125,6 +133,7 @@ audio_description: string (optional)
 ```
 
 ### Force Route to Specific API (for testing)
+
 ```
 POST /route/speech
 POST /route/people
@@ -136,11 +145,11 @@ POST /route/sign-language
 Edit `.env` file:
 
 ```env
-# OpenRouter API Key
-OPENROUTER_API_KEY=your_key_here
+# Google Gemini API Key (Get from https://makersuite.google.com/app/apikey)
+GEMINI_API_KEY=your_key_here
 
-# Gemini Model (via OpenRouter)
-GEMINI_MODEL=google/gemini-2.0-flash-exp:free
+# Gemini Model
+GEMINI_MODEL=gemini-2.0-flash-exp
 
 # Your Digital Ocean API Endpoints
 SPEECH_API_URL=https://your-speech-api.digitalocean.com/api/process
@@ -151,9 +160,17 @@ SIGN_LANGUAGE_API_URL=https://your-sign-language-api.digitalocean.com/api/detect
 CONFIDENCE_THRESHOLD=0.7
 ```
 
+### Get Gemini API Key
+
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Get API key" or "Create API key"
+4. Copy the key to your `.env` file
+
 ## Testing
 
 Run the test suite:
+
 ```bash
 python test_router.py
 ```
@@ -161,11 +178,13 @@ python test_router.py
 ## For Your Teammate (Raspberry Pi Integration)
 
 The Raspberry Pi should send POST requests to:
+
 - `http://your-server:8000/analyze` - To get routing decision only
 - `http://your-server:8000/route` - To get decision + API result
 - `http://your-server:8000/route/upload` - To upload files directly
 
 Example request from Raspberry Pi:
+
 ```python
 import requests
 import base64
@@ -192,6 +211,7 @@ print(result)
 ### Docker Deployment (Recommended)
 
 **Quick Start:**
+
 ```bash
 # Configure environment
 cp .env.example .env
@@ -209,6 +229,7 @@ docker-compose logs -f
 **See `DOCKER_DEPLOYMENT.md` for complete Docker documentation.**
 
 ### Other Platforms
+
 - Digital Ocean App Platform
 - AWS ECS/Lambda
 - Google Cloud Run

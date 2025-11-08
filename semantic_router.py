@@ -1,7 +1,7 @@
 """
 Semantic Router for PerceptEye
 Routes audio and video frames to appropriate API endpoints based on content analysis
-Uses OpenRouter with Gemini for intelligent routing decisions
+Uses Google Gemini API for intelligent routing decisions
 """
 
 import os
@@ -12,6 +12,9 @@ from enum import Enum
 import requests
 from dataclasses import dataclass
 import json
+import google.generativeai as genai
+from PIL import Image
+import io
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,11 +32,11 @@ class RouteType(Enum):
 @dataclass
 class RouterConfig:
     """Configuration for the semantic router"""
-    openrouter_api_key: str
+    gemini_api_key: str
     speech_api_url: str
     people_recognition_api_url: str
     sign_language_api_url: str
-    gemini_model: str = "google/gemini-2.0-flash-exp:free"
+    gemini_model: str = "gemini-2.0-flash-exp"
     confidence_threshold: float = 0.7
 
 
@@ -45,7 +48,10 @@ class SemanticRouter:
     
     def __init__(self, config: RouterConfig):
         self.config = config
-        self.openrouter_base_url = "https://openrouter.ai/api/v1/chat/completions"
+        
+        # Configure Gemini
+        genai.configure(api_key=config.gemini_api_key)
+        self.model = genai.GenerativeModel(config.gemini_model)
         
         # System prompt for the routing decision
         self.system_prompt = """You are an intelligent routing system for an assistive technology platform called PerceptEye.
@@ -84,6 +90,11 @@ Be decisive and prioritize based on the most prominent features in the frame."""
     def encode_image_bytes_to_base64(self, image_bytes: bytes) -> str:
         """Encode image bytes to base64 string"""
         return base64.b64encode(image_bytes).decode('utf-8')
+    
+    def _decode_base64_to_image(self, image_base64: str) -> Image.Image:
+        """Decode base64 string to PIL Image"""
+        image_bytes = base64.b64decode(image_base64)
+        return Image.open(io.BytesIO(image_bytes))
 
     def analyze_frame(
         self,
@@ -103,77 +114,44 @@ Be decisive and prioritize based on the most prominent features in the frame."""
             Dictionary containing routing decision
         """
         try:
-            # Prepare the user message
-            user_content = []
+            # Prepare the prompt
+            prompt_parts = [self.system_prompt]
             
             # Add text context
-            text_content = "Analyze this frame"
+            text_content = "\n\nAnalyze this frame"
             if audio_description:
                 text_content += f" with audio input: {audio_description}"
             text_content += ". Determine the appropriate routing decision."
             
-            user_content.append({
-                "type": "text",
-                "text": text_content
-            })
+            prompt_parts.append(text_content)
             
-            # Add image content
+            # Add image if available
             if image_base64:
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{image_base64}"
-                    }
-                })
+                image = self._decode_base64_to_image(image_base64)
+                prompt_parts.append(image)
             elif image_url:
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": image_url
-                    }
-                })
+                # Download image from URL
+                response = requests.get(image_url, timeout=10)
+                response.raise_for_status()
+                image = Image.open(io.BytesIO(response.content))
+                prompt_parts.append(image)
             
-            # Prepare the API request
-            headers = {
-                "Authorization": f"Bearer {self.config.openrouter_api_key}",
-                "Content-Type": "application/json"
-            }
+            logger.info(f"Sending request to Gemini API with model: {self.config.gemini_model}")
             
-            payload = {
-                "model": self.config.gemini_model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": self.system_prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": user_content
-                    }
-                ],
-                "temperature": 0.3,
-                "max_tokens": 500
-            }
-            
-            logger.info(f"Sending request to OpenRouter with model: {self.config.gemini_model}")
-            
-            # Make the API call
-            response = requests.post(
-                self.openrouter_base_url,
-                headers=headers,
-                json=payload,
-                timeout=30
+            # Generate content with Gemini
+            response = self.model.generate_content(
+                prompt_parts,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.3,
+                    max_output_tokens=500,
+                )
             )
             
-            response.raise_for_status()
-            result = response.json()
-            
             # Extract the routing decision
-            content = result['choices'][0]['message']['content']
+            content = response.text
             logger.info(f"Received response: {content}")
             
             # Parse the JSON response
-            # Try to extract JSON from the response
             routing_decision = self._parse_routing_response(content)
             
             return routing_decision
@@ -336,11 +314,11 @@ Be decisive and prioritize based on the most prominent features in the frame."""
 def create_router_from_env() -> SemanticRouter:
     """Create a router instance from environment variables"""
     config = RouterConfig(
-        openrouter_api_key=os.getenv("OPENROUTER_API_KEY", ""),
+        gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
         speech_api_url=os.getenv("SPEECH_API_URL", ""),
         people_recognition_api_url=os.getenv("PEOPLE_RECOGNITION_API_URL", ""),
         sign_language_api_url=os.getenv("SIGN_LANGUAGE_API_URL", ""),
-        gemini_model=os.getenv("GEMINI_MODEL", "google/gemini-2.0-flash-exp:free"),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp"),
         confidence_threshold=float(os.getenv("CONFIDENCE_THRESHOLD", "0.7"))
     )
     

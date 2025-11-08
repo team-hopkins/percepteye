@@ -11,11 +11,13 @@
 ### 1. Configure Environment Variables
 
 Create `.env` file from the example:
+
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` with your credentials:
+
 ```env
 OPENROUTER_API_KEY=your_key_here
 SPEECH_API_URL=https://your-speech-api.digitalocean.com/api/process
@@ -154,6 +156,7 @@ docker run -d \
 ### 2. Using with Reverse Proxy (Nginx)
 
 **nginx.conf:**
+
 ```nginx
 server {
     listen 80;
@@ -165,7 +168,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
+
         # Increase timeouts for long-running requests
         proxy_read_timeout 90s;
         proxy_connect_timeout 90s;
@@ -176,8 +179,9 @@ server {
 ### 3. Docker Compose with Nginx
 
 **docker-compose.prod.yml:**
+
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   semantic-router:
@@ -217,11 +221,13 @@ networks:
 ### Deploy to Digital Ocean
 
 1. **Using App Platform:**
+
    - Connect your repository
    - Set environment variables in the dashboard
    - App Platform will detect Dockerfile automatically
 
 2. **Using Droplet:**
+
 ```bash
 # SSH into droplet
 ssh root@your-droplet-ip
