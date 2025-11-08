@@ -23,8 +23,7 @@ logger = logging.getLogger(__name__)
 
 class RouteType(Enum):
     """Available API endpoints"""
-    SPEECH = "speech"
-    PEOPLE_RECOGNITION = "people_recognition"
+    FACE_RECOGNITION_TTS = "face_recognition_tts"  # Combined Face Recognition + TTS (replaces speech and people_recognition)
     SIGN_LANGUAGE = "sign_language"
     NONE = "none"
 
@@ -33,8 +32,7 @@ class RouteType(Enum):
 class RouterConfig:
     """Configuration for the semantic router"""
     gemini_api_key: str
-    speech_api_url: str
-    people_recognition_api_url: str
+    face_recognition_tts_api_url: str  # Combined Face Recognition + TTS API
     sign_language_api_url: str
     gemini_model: str = "gemini-2.0-flash-exp"
     confidence_threshold: float = 0.7
@@ -58,24 +56,28 @@ class SemanticRouter:
 
 Your role is to analyze video frames and audio input to determine which API service should be called:
 
-1. **SPEECH** - Text-to-Speech and Speech-to-Text using Eleven Labs
-   - Use when: Audio input is present, someone is speaking, or verbal communication is detected
-   - Indicators: Audio waveforms, mouth movements, speech patterns
+1. **FACE_RECOGNITION_TTS** - Combined Face Recognition and Text-to-Speech/Speech-to-Text
+   - Use when: Faces are visible OR audio/speech is present OR verbal communication is needed
+   - Indicators: Human faces, people in frame, audio input, speech patterns, mouth movements
+   - This API handles BOTH face recognition AND speech processing (via ElevenLabs TTS/STT)
+   - Use this for: person identification, face detection, audio transcription, text-to-speech
 
-2. **PEOPLE_RECOGNITION** - Person identification and recognition
-   - Use when: Clear faces are visible in the frame, need to identify people
-   - Indicators: Human faces, people in the frame, need for person identification
+2. **SIGN_LANGUAGE** - Sign language gesture detection
+   - Use when: Hand gestures or sign language movements are prominently visible
+   - Indicators: Hands in prominent position, gesturing, sign language patterns, hand shapes
+   - Only use this when sign language is the PRIMARY focus of the frame
 
-3. **SIGN_LANGUAGE** - Sign language gesture detection
-   - Use when: Hand gestures, sign language movements are visible
-   - Indicators: Hands in prominent position, gesturing, sign language patterns
+3. **NONE** - No clear action needed
+   - Use when: Frame is unclear, no relevant activity detected, or empty frame
 
-4. **NONE** - No clear action needed
-   - Use when: Frame is unclear, no relevant activity detected
+Priority Rules:
+- If faces AND sign language are both visible, prefer FACE_RECOGNITION_TTS unless sign language is the dominant feature
+- If audio/speech is present with any visual content, prefer FACE_RECOGNITION_TTS
+- Only route to SIGN_LANGUAGE when hands/gestures are the primary focus
 
 Analyze the provided frame(s) and audio description, then respond with ONLY a JSON object in this exact format:
 {
-  "route": "speech" | "people_recognition" | "sign_language" | "none",
+  "route": "face_recognition_tts" | "sign_language" | "none",
   "confidence": 0.0-1.0,
   "reasoning": "brief explanation"
 }
@@ -242,10 +244,8 @@ Be decisive and prioritize based on the most prominent features in the frame."""
         api_response = None
         
         try:
-            if route_type == RouteType.SPEECH.value:
-                api_response = self._call_speech_api(audio_data, audio_description)
-            elif route_type == RouteType.PEOPLE_RECOGNITION.value:
-                api_response = self._call_people_recognition_api(image_base64)
+            if route_type == RouteType.FACE_RECOGNITION_TTS.value:
+                api_response = self._call_face_recognition_tts_api(image_base64, audio_data, audio_description)
             elif route_type == RouteType.SIGN_LANGUAGE.value:
                 api_response = self._call_sign_language_api(image_base64)
             
@@ -264,38 +264,113 @@ Be decisive and prioritize based on the most prominent features in the frame."""
                 "error": str(e)
             }
     
-    def _call_speech_api(self, audio_data: Optional[bytes], audio_description: Optional[str]) -> Dict:
-        """Call the Speech API"""
-        logger.info("Calling Speech API")
+    def _call_face_recognition_tts_api(
+        self, 
+        image_base64: Optional[str], 
+        audio_data: Optional[bytes] = None, 
+        audio_description: Optional[str] = None
+    ) -> Dict:
+        """
+        Call the combined Face Recognition + TTS API
         
-        # Prepare the request based on what's available
+        API Endpoint: POST /process
+        Content-Type: multipart/form-data
+        
+        Form fields:
+        - image (string, REQUIRED): base64-encoded image
+        - audio (file, OPTIONAL): audio file for transcription
+        - audio_text (string, OPTIONAL): text to synthesize to speech
+        - annotated (boolean, OPTIONAL): return annotated image with bounding boxes
+        - announce (boolean, OPTIONAL): prepare announcement from recognized faces
+        - speak (boolean, OPTIONAL): synthesize speech from announcement
+        
+        Response:
+        {
+            "faces": ["Alice", "Unknown"],
+            "locations": ["left", "right"],
+            "unknown_count": 1,
+            "announcement": "I see Alice on the left...",
+            "speech_text": "...",
+            "annotated_image_base64": "...",
+            "eleven_tts_base64": "...",
+            "transcribed": "...",
+            "eleven_tts_error": null
+        }
+        """
+        logger.info("Calling Face Recognition + TTS API")
+        
+        # Prepare multipart form data
+        files = {}
+        data = {}
+        
+        # Image is required
+        if not image_base64:
+            return {"error": "No image provided for face recognition"}
+        
+        # Add image as base64 string (not file)
+        data['image'] = image_base64
+        
+        # Add audio file if available
         if audio_data:
-            files = {'audio': audio_data}
-            response = requests.post(self.config.speech_api_url, files=files, timeout=30)
-        elif audio_description:
-            response = requests.post(
-                self.config.speech_api_url,
-                json={"text": audio_description},
-                timeout=30
-            )
-        else:
-            return {"error": "No audio data or description provided"}
+            files['audio'] = ('audio.wav', audio_data, 'audio/wav')
         
-        response.raise_for_status()
-        return response.json()
+        # Add audio text if available
+        if audio_description:
+            data['audio_text'] = audio_description
+        
+        # Request annotated image and speech
+        data['annotated'] = 'true'
+        data['announce'] = 'true'
+        data['speak'] = 'true'
+        
+        try:
+            # Make request to /process endpoint
+            response = requests.post(
+                self.config.face_recognition_tts_api_url,
+                data=data,
+                files=files if files else None,
+                timeout=60  # Longer timeout for face recognition + TTS
+            )
+            
+            response.raise_for_status()
+            result = response.json()
+            
+            # Log the results
+            faces = result.get('faces', [])
+            unknown_count = result.get('unknown_count', 0)
+            announcement = result.get('announcement', '')
+            
+            logger.info(f"Faces detected: {', '.join(faces)}")
+            logger.info(f"Unknown faces: {unknown_count}")
+            if announcement:
+                logger.info(f"Announcement: {announcement}")
+            
+            return result
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error calling Face Recognition + TTS API: {str(e)}")
+            return {
+                "error": str(e),
+                "faces": [],
+                "unknown_count": 0,
+                "announcement": None
+            }
+    
+    def _call_speech_api(self, audio_data: Optional[bytes], audio_description: Optional[str]) -> Dict:
+        """
+        DEPRECATED: Speech API functionality is now part of Face Recognition + TTS API
+        This method is kept for backward compatibility
+        """
+        logger.warning("Speech API is deprecated. Use Face Recognition + TTS API instead.")
+        return self._call_face_recognition_tts_api(None, audio_data, audio_description)
     
     def _call_people_recognition_api(self, image_base64: str) -> Dict:
-        """Call the People Recognition API"""
-        logger.info("Calling People Recognition API")
-        
-        response = requests.post(
-            self.config.people_recognition_api_url,
-            json={"image": image_base64},
-            timeout=30
-        )
-        
-        response.raise_for_status()
-        return response.json()
+        """
+        DEPRECATED: People Recognition functionality is now part of Face Recognition + TTS API
+        This method is kept for backward compatibility
+        """
+        logger.warning("People Recognition API is deprecated. Use Face Recognition + TTS API instead.")
+        return self._call_face_recognition_tts_api(image_base64)
     
     def _call_sign_language_api(self, image_base64: str) -> Dict:
         """
@@ -343,8 +418,7 @@ def create_router_from_env() -> SemanticRouter:
     """Create a router instance from environment variables"""
     config = RouterConfig(
         gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
-        speech_api_url=os.getenv("SPEECH_API_URL", ""),
-        people_recognition_api_url=os.getenv("PEOPLE_RECOGNITION_API_URL", ""),
+        face_recognition_tts_api_url=os.getenv("FACE_RECOGNITION_TTS_API_URL", ""),
         sign_language_api_url=os.getenv("SIGN_LANGUAGE_API_URL", ""),
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp"),
         confidence_threshold=float(os.getenv("CONFIDENCE_THRESHOLD", "0.7"))

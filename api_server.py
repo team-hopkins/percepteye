@@ -169,11 +169,25 @@ async def route_frame_upload(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/route/face-recognition")
+async def force_route_face_recognition(request: FrameAnalysisRequest):
+    """Force route to face recognition + TTS API (bypass semantic routing)"""
+    try:
+        result = router._call_face_recognition_tts_api(
+            request.image_base64,
+            None,
+            request.audio_description
+        )
+        return {"api_response": result, "status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/route/speech")
 async def force_route_speech(request: FrameAnalysisRequest):
-    """Force route to speech API (bypass semantic routing)"""
+    """DEPRECATED: Use /route/face-recognition instead. Speech is now part of Face Recognition + TTS API"""
     try:
-        result = router._call_speech_api(None, request.audio_description)
+        result = router._call_face_recognition_tts_api(None, None, request.audio_description)
         return {"api_response": result, "status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -181,9 +195,9 @@ async def force_route_speech(request: FrameAnalysisRequest):
 
 @app.post("/route/people")
 async def force_route_people(request: FrameAnalysisRequest):
-    """Force route to people recognition API (bypass semantic routing)"""
+    """DEPRECATED: Use /route/face-recognition instead. People recognition is now part of Face Recognition + TTS API"""
     try:
-        result = router._call_people_recognition_api(request.image_base64)
+        result = router._call_face_recognition_tts_api(request.image_base64, None, None)
         return {"api_response": result, "status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

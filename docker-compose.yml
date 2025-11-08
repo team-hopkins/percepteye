@@ -14,8 +14,7 @@ services:
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
 
       # API Endpoints (deployed on Digital Ocean)
-      - SPEECH_API_URL=${SPEECH_API_URL}
-      - PEOPLE_RECOGNITION_API_URL=${PEOPLE_RECOGNITION_API_URL}
+      - FACE_RECOGNITION_TTS_API_URL=${FACE_RECOGNITION_TTS_API_URL}
       - SIGN_LANGUAGE_API_URL=${SIGN_LANGUAGE_API_URL}
 
       # Router Configuration

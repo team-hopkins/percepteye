@@ -1,6 +1,8 @@
 # PerceptEye - Semantic Router
 
-An intelligent routing middleware API that uses OpenRouter with Gemini to analyze video and audio frames and route requests to the appropriate feature API.
+YCP2025@hacks
+
+An intelligent routing middleware API that uses Google Gemini to analyze video and audio frames and route requests to the appropriate feature API.
 
 ## System Architecture
 
@@ -9,18 +11,26 @@ Raspberry Pi (Camera)
     ↓ (sends frames)
 Semantic Router API (Middleware)
     ↓ (analyzes with Google Gemini API)
-    ├→ Speech API (Eleven Labs - Digital Ocean)
-    ├→ People Recognition API (Digital Ocean)
-    └→ Sign Language API (Digital Ocean)
+    ├→ Face Recognition + TTS API (Digital Ocean) - Handles faces, speech, and audio
+    └→ Sign Language API (Digital Ocean) - Handles sign language gestures
 ```
 
 ## Features
 
-### Three Feature APIs (deployed on Digital Ocean):
+### Two Feature APIs (deployed on Digital Ocean):
 
-1. **Speech API** - Text-to-Speech and Speech-to-Text using Eleven Labs
-2. **People Recognition API** - Face detection and person identification
-3. **Sign Language Detection API** - Gesture recognition from image frames
+1. **Face Recognition + TTS API** - Combined face detection, person identification, and Text-to-Speech/Speech-to-Text using Eleven Labs
+
+   - Face detection and recognition
+   - Audio transcription (Speech-to-Text)
+   - Text synthesis (Text-to-Speech)
+   - Annotated images with bounding boxes
+   - Announcement generation
+
+2. **Sign Language Detection API** - Gesture recognition from image frames
+   - Hand gesture detection
+   - Sign language classification
+   - Confidence scoring
 
 ### Semantic Router:
 
@@ -59,7 +69,7 @@ cp .env.example .env
 python api_server.py
 ```
 
-Server runs on: `http://localhost:8000`
+Server runs on: `http://localhost:8001` (Docker) or `http://localhost:8000` (local Python)
 
 ## API Endpoints
 
@@ -86,7 +96,7 @@ Content-Type: application/json
 
 ```json
 {
-  "route": "speech|people_recognition|sign_language|none",
+  "route": "face_recognition_tts|sign_language|none",
   "confidence": 0.85,
   "reasoning": "Detected hand gestures indicating sign language",
   "error": false
@@ -152,10 +162,10 @@ GEMINI_API_KEY=your_key_here
 GEMINI_MODEL=gemini-2.0-flash-exp
 
 # Your Digital Ocean API Endpoints
-SPEECH_API_URL=https://your-speech-api.digitalocean.com/api/process
-PEOPLE_RECOGNITION_API_URL=https://your-people-api.digitalocean.com/api/recognize
-# Sign Language API base URL (e.g., http://your-ip:8000)
-SIGN_LANGUAGE_API_URL=https://your-sign-language-api.digitalocean.com:8000
+# Face Recognition + TTS API (combines face detection, recognition, and speech)
+FACE_RECOGNITION_TTS_API_URL=http://143.198.4.179/process
+# Sign Language Detection API
+SIGN_LANGUAGE_API_URL=http://138.197.12.52
 
 # Routing Configuration
 CONFIDENCE_THRESHOLD=0.7
@@ -170,19 +180,37 @@ CONFIDENCE_THRESHOLD=0.7
 
 ## Testing
 
-Run the test suite:
+Run the comprehensive test suite:
 
 ```bash
-python test_router.py
+# Run all tests
+python test.py
+
+# Run specific tests
+python test.py --test health
+python test.py --test sign_language
+python test.py --test face_recognition
+python test.py --test scenarios
+
+# Test with custom router URL
+python test.py --router-url http://localhost:8000
 ```
+
+The test suite includes:
+
+- ✅ Health check
+- ✅ Sign Language Detection API
+- ✅ Face Recognition + TTS API
+- ✅ Multiple routing scenarios
+- ✅ Direct API endpoint tests
 
 ## For Your Teammate (Raspberry Pi Integration)
 
 The Raspberry Pi should send POST requests to:
 
-- `http://your-server:8000/analyze` - To get routing decision only
-- `http://your-server:8000/route` - To get decision + API result
-- `http://your-server:8000/route/upload` - To upload files directly
+- `http://your-server:8001/analyze` - To get routing decision only
+- `http://your-server:8001/route` - To get decision + API result
+- `http://your-server:8001/route/upload` - To upload files directly
 
 Example request from Raspberry Pi:
 
