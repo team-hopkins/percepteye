@@ -70,7 +70,7 @@ python test.py --test health
 
 ```bash
 # Google Gemini API
-GEMINI_API_KEY=AIzaSyBkoywITTEQ8eBZIKjZoxjTiwo5r_mSP8A
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 GEMINI_MODEL=gemini-2.0-flash-exp
 
 # Deployed APIs
