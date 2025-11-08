@@ -346,7 +346,8 @@ GEMINI_MODEL=gemini-2.0-flash-exp
 # Target APIs (Your Digital Ocean endpoints)
 SPEECH_API_URL=https://speech.yourdomain.com/api/process
 PEOPLE_RECOGNITION_API_URL=https://people.yourdomain.com/api/recognize
-SIGN_LANGUAGE_API_URL=https://signlang.yourdomain.com/api/detect
+# Sign Language API base URL (router will append /predict/base64)
+SIGN_LANGUAGE_API_URL=http://signlang.yourdomain.com:8000
 
 # Routing Threshold
 CONFIDENCE_THRESHOLD=0.7

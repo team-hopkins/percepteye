@@ -298,17 +298,45 @@ Be decisive and prioritize based on the most prominent features in the frame."""
         return response.json()
     
     def _call_sign_language_api(self, image_base64: str) -> Dict:
-        """Call the Sign Language API"""
-        logger.info("Calling Sign Language API")
+        """
+        Call the Sign Language API
+        Expects POST to /predict/base64 endpoint with image_base64 field
+        
+        API Response structure:
+        {
+            "success": bool,
+            "predicted_sign": str or null,
+            "confidence": float or null,
+            "all_predictions": array or null,
+            "hand_detected": bool,
+            "message": str
+        }
+        """
+        logger.info("Calling Sign Language Detection API")
+        
+        # Sign Language API expects /predict/base64 endpoint
+        api_url = self.config.sign_language_api_url
+        if not api_url.endswith('/predict/base64'):
+            # Ensure we're using the correct endpoint
+            api_url = api_url.rstrip('/') + '/predict/base64'
         
         response = requests.post(
-            self.config.sign_language_api_url,
-            json={"image": image_base64},
+            api_url,
+            json={"image_base64": image_base64},  # API expects "image_base64" field
             timeout=30
         )
         
         response.raise_for_status()
-        return response.json()
+        result = response.json()
+        
+        # Log the detection result
+        if result.get("success") and result.get("hand_detected"):
+            logger.info(f"Sign detected: {result.get('predicted_sign')} "
+                       f"(confidence: {result.get('confidence', 0):.2%})")
+        elif result.get("success") and not result.get("hand_detected"):
+            logger.info("No hand detected in frame")
+        
+        return result
 
 
 def create_router_from_env() -> SemanticRouter:

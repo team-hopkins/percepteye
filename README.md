@@ -154,7 +154,8 @@ GEMINI_MODEL=gemini-2.0-flash-exp
 # Your Digital Ocean API Endpoints
 SPEECH_API_URL=https://your-speech-api.digitalocean.com/api/process
 PEOPLE_RECOGNITION_API_URL=https://your-people-api.digitalocean.com/api/recognize
-SIGN_LANGUAGE_API_URL=https://your-sign-language-api.digitalocean.com/api/detect
+# Sign Language API base URL (e.g., http://your-ip:8000)
+SIGN_LANGUAGE_API_URL=https://your-sign-language-api.digitalocean.com:8000
 
 # Routing Configuration
 CONFIDENCE_THRESHOLD=0.7
