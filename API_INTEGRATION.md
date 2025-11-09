@@ -38,7 +38,12 @@ The router expects and handles this response structure:
   "success": true,
   "predicted_sign": "B",
   "confidence": 0.9958,
-  "all_predictions": [...],
+  "contextual_meaning": "I need a bathroom",
+  "alternative_contexts": [
+    "The letter B",
+    "I need to go back",
+    "Book please"
+  ],
   "hand_detected": true,
   "message": "Prediction successful"
 }
@@ -95,6 +100,12 @@ curl -X POST http://localhost:8000/route \
     "success": true,
     "predicted_sign": "B",
     "confidence": 0.9958,
+    "contextual_meaning": "I need a bathroom",
+    "alternative_contexts": [
+      "The letter B",
+      "I need to go back",
+      "Book please"
+    ],
     "hand_detected": true,
     "message": "Prediction successful"
   },

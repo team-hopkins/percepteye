@@ -382,7 +382,8 @@ Be decisive and prioritize based on the most prominent features in the frame."""
             "success": bool,
             "predicted_sign": str or null,
             "confidence": float or null,
-            "all_predictions": array or null,
+            "contextual_meaning": str or null,
+            "alternative_contexts": array or null,
             "hand_detected": bool,
             "message": str
         }
@@ -406,8 +407,14 @@ Be decisive and prioritize based on the most prominent features in the frame."""
         
         # Log the detection result
         if result.get("success") and result.get("hand_detected"):
-            logger.info(f"Sign detected: {result.get('predicted_sign')} "
-                       f"(confidence: {result.get('confidence', 0):.2%})")
+            sign = result.get('predicted_sign')
+            confidence = result.get('confidence', 0)
+            contextual = result.get('contextual_meaning')
+            
+            log_msg = f"Sign detected: {sign} (confidence: {confidence:.2%})"
+            if contextual:
+                log_msg += f" - Meaning: {contextual}"
+            logger.info(log_msg)
         elif result.get("success") and not result.get("hand_detected"):
             logger.info("No hand detected in frame")
         

@@ -113,13 +113,15 @@ class PerceptEyeTestSuite:
                 print(f"   Predicted Sign: '{api_response.get('predicted_sign')}'")
                 print(f"   Confidence: {api_response.get('confidence', 0) * 100:.1f}%")
                 
-                predictions = api_response.get('all_predictions', [])
-                if predictions:
-                    print(f"\n   📊 Top 3 Predictions:")
-                    for i, pred in enumerate(predictions[:3], 1):
-                        sign = pred.get('sign', 'N/A')
-                        conf = pred.get('confidence', 0)
-                        print(f"      {i}. {sign} - {conf * 100:.1f}%")
+                # Display contextual meaning if available
+                contextual_meaning = api_response.get('contextual_meaning')
+                if contextual_meaning:
+                    print(f"   Contextual Meaning: '{contextual_meaning}'")
+                
+                # Display alternative contexts if available
+                alt_contexts = api_response.get('alternative_contexts', [])
+                if alt_contexts:
+                    print(f"   Alternative Meanings: {', '.join(alt_contexts)}")
                 
                 if routing.get('route') == 'sign_language' and api_response.get('hand_detected'):
                     print(f"\n✅ ✅ ✅ SUCCESS! Sign language detection working correctly!")

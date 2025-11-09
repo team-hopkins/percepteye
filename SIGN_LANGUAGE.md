@@ -98,19 +98,11 @@ Content-Type: application/json
   "success": true,
   "predicted_sign": "B",
   "confidence": 0.9958,
-  "all_predictions": [
-    {
-      "sign": "B",
-      "confidence": 0.9958
-    },
-    {
-      "sign": "W",
-      "confidence": 0.0029
-    },
-    {
-      "sign": "E",
-      "confidence": 0.0005
-    }
+  "contextual_meaning": "I need a bathroom",
+  "alternative_contexts": [
+    "The letter B",
+    "I need to go back",
+    "Book please"
   ],
   "hand_detected": true,
   "message": "Prediction successful"
@@ -124,7 +116,8 @@ Content-Type: application/json
   "success": true,
   "predicted_sign": null,
   "confidence": null,
-  "all_predictions": null,
+  "contextual_meaning": null,
+  "alternative_contexts": null,
   "hand_detected": false,
   "message": "No hand detected in image"
 }
@@ -229,12 +222,22 @@ def main():
         if result.get("success") and result.get("hand_detected"):
             sign = result["predicted_sign"]
             confidence = result["confidence"]
+            contextual_meaning = result.get("contextual_meaning")
 
             print(f"Detected: {sign} (Confidence: {confidence:.1%})")
+            
+            # NEW: Display contextual meaning if available
+            if contextual_meaning:
+                print(f"Meaning: {contextual_meaning}")
+                
+                # Show alternative contexts
+                alt_contexts = result.get("alternative_contexts", [])
+                if alt_contexts:
+                    print(f"Alternatives: {', '.join(alt_contexts)}")
 
             # You can now:
             # 1. Add to sentence buffer
-            # 2. Trigger text-to-speech
+            # 2. Trigger text-to-speech with contextual meaning
             # 3. Display on screen
             # 4. Log for analytics
 
@@ -326,14 +329,15 @@ def semantic_router_logic(frame, audio, context):
 
 ## 📊 Response Structure Reference
 
-| Field             | Type           | Description                              |
-| ----------------- | -------------- | ---------------------------------------- |
-| `success`         | boolean        | Whether the API call succeeded           |
-| `predicted_sign`  | string or null | The detected ASL sign (A-Z, del, space)  |
-| `confidence`      | float or null  | Prediction confidence (0.0 to 1.0)       |
-| `all_predictions` | array or null  | Top 3 predictions with confidence scores |
-| `hand_detected`   | boolean        | Whether a hand was detected in the image |
-| `message`         | string         | Human-readable status message            |
+| Field                 | Type           | Description                                          |
+| --------------------- | -------------- | ---------------------------------------------------- |
+| `success`             | boolean        | Whether the API call succeeded                       |
+| `predicted_sign`      | string or null | The detected ASL sign (A-Z, del, space)              |
+| `confidence`          | float or null  | Prediction confidence (0.0 to 1.0)                   |
+| `contextual_meaning`  | string or null | AI-generated contextual interpretation of the sign   |
+| `alternative_contexts`| array or null  | List of alternative contextual meanings              |
+| `hand_detected`       | boolean        | Whether a hand was detected in the image             |
+| `message`             | string         | Human-readable status message                        |
 
 ## ⚠️ Important Considerations
 
