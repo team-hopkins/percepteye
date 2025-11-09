@@ -213,6 +213,46 @@ async def force_route_sign_language(request: FrameAnalysisRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/route/scene-description")
+async def force_route_scene_description(request: FrameAnalysisRequest):
+    """Force route to scene description (bypass semantic routing)
+    
+    Uses Gemini to provide detailed scene description for visually impaired users.
+    Useful when you want to know what objects are in the environment without
+    face or sign language detection.
+    """
+    try:
+        # Get the full routing response which includes scene description
+        result = router.analyze_frame(
+            image_base64=request.image_base64,
+            audio_description=request.audio_description,
+            image_url=request.image_url
+        )
+        
+        # Extract scene description fields if present
+        if result.get("route") == "scene_description":
+            api_response = {
+                "scene_description": result.get("scene_description", ""),
+                "objects_detected": result.get("objects_detected", []),
+                "spatial_info": result.get("spatial_info", ""),
+                "text_detected": result.get("text_detected"),
+                "safety_warnings": result.get("safety_warnings", [])
+            }
+        else:
+            # If Gemini didn't route to scene description, still try to get a description
+            api_response = {
+                "scene_description": result.get("reasoning", "Unable to describe scene"),
+                "objects_detected": [],
+                "spatial_info": "",
+                "text_detected": None,
+                "safety_warnings": []
+            }
+        
+        return {"api_response": api_response, "status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     
@@ -223,3 +263,4 @@ if __name__ == "__main__":
         port=8001,
         log_level="info"
     )
+

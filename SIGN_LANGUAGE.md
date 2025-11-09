@@ -99,11 +99,7 @@ Content-Type: application/json
   "predicted_sign": "B",
   "confidence": 0.9958,
   "contextual_meaning": "I need a bathroom",
-  "alternative_contexts": [
-    "The letter B",
-    "I need to go back",
-    "Book please"
-  ],
+  "alternative_contexts": ["The letter B", "I need to go back", "Book please"],
   "hand_detected": true,
   "message": "Prediction successful"
 }
@@ -225,11 +221,11 @@ def main():
             contextual_meaning = result.get("contextual_meaning")
 
             print(f"Detected: {sign} (Confidence: {confidence:.1%})")
-            
+
             # NEW: Display contextual meaning if available
             if contextual_meaning:
                 print(f"Meaning: {contextual_meaning}")
-                
+
                 # Show alternative contexts
                 alt_contexts = result.get("alternative_contexts", [])
                 if alt_contexts:
@@ -329,15 +325,15 @@ def semantic_router_logic(frame, audio, context):
 
 ## 📊 Response Structure Reference
 
-| Field                 | Type           | Description                                          |
-| --------------------- | -------------- | ---------------------------------------------------- |
-| `success`             | boolean        | Whether the API call succeeded                       |
-| `predicted_sign`      | string or null | The detected ASL sign (A-Z, del, space)              |
-| `confidence`          | float or null  | Prediction confidence (0.0 to 1.0)                   |
-| `contextual_meaning`  | string or null | AI-generated contextual interpretation of the sign   |
-| `alternative_contexts`| array or null  | List of alternative contextual meanings              |
-| `hand_detected`       | boolean        | Whether a hand was detected in the image             |
-| `message`             | string         | Human-readable status message                        |
+| Field                  | Type           | Description                                        |
+| ---------------------- | -------------- | -------------------------------------------------- |
+| `success`              | boolean        | Whether the API call succeeded                     |
+| `predicted_sign`       | string or null | The detected ASL sign (A-Z, del, space)            |
+| `confidence`           | float or null  | Prediction confidence (0.0 to 1.0)                 |
+| `contextual_meaning`   | string or null | AI-generated contextual interpretation of the sign |
+| `alternative_contexts` | array or null  | List of alternative contextual meanings            |
+| `hand_detected`        | boolean        | Whether a hand was detected in the image           |
+| `message`              | string         | Human-readable status message                      |
 
 ## ⚠️ Important Considerations
 

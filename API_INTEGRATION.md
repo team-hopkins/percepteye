@@ -39,11 +39,7 @@ The router expects and handles this response structure:
   "predicted_sign": "B",
   "confidence": 0.9958,
   "contextual_meaning": "I need a bathroom",
-  "alternative_contexts": [
-    "The letter B",
-    "I need to go back",
-    "Book please"
-  ],
+  "alternative_contexts": ["The letter B", "I need to go back", "Book please"],
   "hand_detected": true,
   "message": "Prediction successful"
 }

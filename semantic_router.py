@@ -25,6 +25,7 @@ class RouteType(Enum):
     """Available API endpoints"""
     FACE_RECOGNITION_TTS = "face_recognition_tts"  # Combined Face Recognition + TTS (replaces speech and people_recognition)
     SIGN_LANGUAGE = "sign_language"
+    SCENE_DESCRIPTION = "scene_description"  # Gemini-powered scene description for navigation assistance
     NONE = "none"
 
 
@@ -34,7 +35,7 @@ class RouterConfig:
     gemini_api_key: str
     face_recognition_tts_api_url: str  # Combined Face Recognition + TTS API
     sign_language_api_url: str
-    gemini_model: str = "gemini-2.0-flash-exp"
+    gemini_model: str = "gemini-2.5-flash"
     confidence_threshold: float = 0.7
 
 
@@ -67,19 +68,48 @@ Your role is to analyze video frames and audio input to determine which API serv
    - Indicators: Hands in prominent position, gesturing, sign language patterns, hand shapes
    - Only use this when sign language is the PRIMARY focus of the frame
 
-3. **NONE** - No clear action needed
-   - Use when: Frame is unclear, no relevant activity detected, or empty frame
+3. **SCENE_DESCRIPTION** - Scene and object description for navigation assistance
+   - Use when: No faces AND no hand gestures are detected, but there is visual content
+   - Provide detailed description of the scene for visually impaired users
+   - Focus on: objects, spatial relationships, colors, text (OCR), potential obstacles
+   - Be helpful for navigation and environmental awareness
+
+4. **NONE** - No clear action needed
+   - Use when: Frame is completely unclear, empty, or error condition
 
 Priority Rules:
-- If faces AND sign language are both visible, prefer FACE_RECOGNITION_TTS unless sign language is the dominant feature
+- If faces are visible → FACE_RECOGNITION_TTS
+- If hand gestures are prominently visible → SIGN_LANGUAGE
+- If neither faces nor gestures → SCENE_DESCRIPTION
 - If audio/speech is present with any visual content, prefer FACE_RECOGNITION_TTS
-- Only route to SIGN_LANGUAGE when hands/gestures are the primary focus
+- Only use NONE for errors or completely empty frames
 
-Analyze the provided frame(s) and audio description, then respond with ONLY a JSON object in this exact format:
+For SCENE_DESCRIPTION responses, also provide:
+- A concise, helpful description of the scene
+- List of main objects detected
+- Spatial information (left, right, center, distance)
+- Any text visible in the image
+- Safety warnings if applicable (stairs, obstacles, etc.)
+
+Analyze the provided frame(s) and audio description, then respond with a JSON object in this format:
+
+For FACE_RECOGNITION_TTS or SIGN_LANGUAGE routes:
 {
-  "route": "face_recognition_tts" | "sign_language" | "none",
+  "route": "face_recognition_tts" | "sign_language",
   "confidence": 0.0-1.0,
   "reasoning": "brief explanation"
+}
+
+For SCENE_DESCRIPTION route:
+{
+  "route": "scene_description",
+  "confidence": 0.0-1.0,
+  "reasoning": "brief explanation",
+  "scene_description": "I see a coffee mug on the left side of a wooden table...",
+  "objects_detected": ["coffee mug", "table", "laptop"],
+  "spatial_info": "The mug is on the left, laptop on the right",
+  "text_detected": "Sign reads: Exit",
+  "safety_warnings": ["Steps ahead", "Low ceiling"]
 }
 
 Be decisive and prioritize based on the most prominent features in the frame."""
@@ -180,12 +210,22 @@ Be decisive and prioritize based on the most prominent features in the frame."""
                 
                 # Validate the response
                 if "route" in routing_data and "confidence" in routing_data:
-                    return {
+                    result = {
                         "route": routing_data["route"],
                         "confidence": float(routing_data["confidence"]),
                         "reasoning": routing_data.get("reasoning", ""),
                         "error": False
                     }
+                    
+                    # For scene description, include additional fields
+                    if routing_data["route"] == RouteType.SCENE_DESCRIPTION.value:
+                        result["scene_description"] = routing_data.get("scene_description", "")
+                        result["objects_detected"] = routing_data.get("objects_detected", [])
+                        result["spatial_info"] = routing_data.get("spatial_info", "")
+                        result["text_detected"] = routing_data.get("text_detected")
+                        result["safety_warnings"] = routing_data.get("safety_warnings", [])
+                    
+                    return result
             
             # If JSON parsing fails, return default
             return {
@@ -247,7 +287,24 @@ Be decisive and prioritize based on the most prominent features in the frame."""
             if route_type == RouteType.FACE_RECOGNITION_TTS.value:
                 api_response = self._call_face_recognition_tts_api(image_base64, audio_data, audio_description)
             elif route_type == RouteType.SIGN_LANGUAGE.value:
-                api_response = self._call_sign_language_api(image_base64)
+                if image_base64:
+                    api_response = self._call_sign_language_api(image_base64)
+                else:
+                    return {
+                        "routing_decision": routing_decision,
+                        "api_response": {"error": "No image provided for sign language detection"},
+                        "status": "error"
+                    }
+            elif route_type == RouteType.SCENE_DESCRIPTION.value:
+                # Scene description is already in the routing decision from Gemini
+                api_response = {
+                    "scene_description": routing_decision.get("scene_description", ""),
+                    "objects_detected": routing_decision.get("objects_detected", []),
+                    "spatial_info": routing_decision.get("spatial_info", ""),
+                    "text_detected": routing_decision.get("text_detected"),
+                    "safety_warnings": routing_decision.get("safety_warnings", [])
+                }
+                logger.info(f"Scene description: {api_response.get('scene_description', '')[:100]}...")
             
             return {
                 "routing_decision": routing_decision,

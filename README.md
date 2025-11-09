@@ -265,3 +265,12 @@ docker-compose logs -f
 - Kubernetes
 
 See `README_ROUTER.md` for detailed deployment instructions.
+
+I had a few things on my mind, please don't try to implement the code
+Just help me visualize if it is feasible or not
+There are two types of API we route there currently:
+
+- Face Recognition + TTS API
+- Sign Language Detection API
+  I was thinking if there are no faces or hand gestures.
+  Then we can leverage gemini-2.5-flash, which will share what nearby object it sees to help the blind people see nearby objects
