@@ -484,7 +484,7 @@ def create_router_from_env() -> SemanticRouter:
         gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
         face_recognition_tts_api_url=os.getenv("FACE_RECOGNITION_TTS_API_URL", ""),
         sign_language_api_url=os.getenv("SIGN_LANGUAGE_API_URL", ""),
-        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp"),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         confidence_threshold=float(os.getenv("CONFIDENCE_THRESHOLD", "0.7"))
     )
     
